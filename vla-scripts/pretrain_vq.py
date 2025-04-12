@@ -9,6 +9,10 @@ Example with bridge for 256 bins, ac_dim=7, ac_chunk=8, and num residual rounds 
      python vla-scripts/pretrain_vq.py --data_dir $WHERE_IS_BRIDGE \\
         --data_mix bridge_dataset --action_dim 7 --future_action_horizon 7 --vqvae_n_embed 256
 
+Example with droid for 256 bins, ac_dim=8, ac_chunk=16, and num residual rounds = 8:
+     python vla-scripts/pretrain_vq.py --data_dir /app/karl/datasets \\
+        --data_mix droid --action_dim 8 --future_action_horizon 15 --vqvae_n_embed 256
+
 """
 
 import argparse
@@ -37,9 +41,9 @@ def main():
     # train arguments
     p.add_argument("--wandb_project", type=str, default="prismatic-vq-vla")
     p.add_argument("--wandb_entity", type=str, default=None)
-    p.add_argument("--batch_size", type=int, default=1028)
-    p.add_argument("--epochs", type=int, default=200)
-    p.add_argument("--save_every_n_epochs", type=int, default=2)
+    p.add_argument("--batch_size", type=int, default=1024)
+    p.add_argument("--epochs", type=int, default=10)
+    p.add_argument("--save_every_n_epochs", type=int, default=1)
     p.add_argument("--device", type=str, default="cuda")
 
     # residual VQ arguments

@@ -214,6 +214,7 @@ def train(cfg: TrainConfig) -> None:
         # if using wrist images, we assume we passed in a 2x image sequence len
         image_window_size=cfg.image_sequence_len // 2 if cfg.use_wrist_image else cfg.image_sequence_len,
         use_wrist_image=cfg.use_wrist_image,  # will double the sequence length
+        use_proprio=cfg.vla.use_proprio,
     )
 
     # Save dataset statistics for de-normalization at inference time

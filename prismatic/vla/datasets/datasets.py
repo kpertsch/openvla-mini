@@ -37,11 +37,13 @@ class RLDSBatchTransform:
     predict_stop_token: bool = True
     image_window_size: int = 1
     use_wrist_image: bool = False
+    use_proprio: bool = False
 
     def __call__(self, rlds_batch: Dict[str, Any]) -> Dict[str, Any]:
         """Converts a RLDS batch to the format expected by the OpenVLA collator/models."""
         dataset_name, action = rlds_batch["dataset_name"], rlds_batch["action"]
         lang = rlds_batch["task"]["language_instruction"].decode().lower()
+        state = rlds_batch["observation"]["proprio"][0]
 
         # either a single or multi image, depending on image_window_size
         if self.image_window_size == 1:
@@ -70,9 +72,13 @@ class RLDSBatchTransform:
         tokenized_action = self.action_tokenizer(action)
         raw_action_tokens = self.base_tokenizer(tokenized_action)["input_ids"]
 
+        input_text = f"What action should the robot take to {lang}?"
+        if self.use_proprio:
+            input_text += f" State: {state}"
+
         conversation.extend(
             [
-                {"from": "human", "value": f"What action should the robot take to {lang}?"},
+                {"from": "human", "value": input_text},
                 {"from": "gpt", "value": tokenized_action},
             ]
         )

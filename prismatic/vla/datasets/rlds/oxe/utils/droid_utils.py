@@ -63,18 +63,46 @@ def rand_swap_exterior_images(img1, img2):
     return tf.cond(tf.random.uniform(shape=[]) > 0.5, lambda: (img1, img2), lambda: (img2, img1))
 
 
-def droid_baseact_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
+# def droid_baseact_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
+#     """
+#     DROID dataset transformation for actions expressed in *base* frame of the robot.
+#     """
+#     dt = trajectory["action_dict"]["cartesian_velocity"][:, :3]
+#     dR = trajectory["action_dict"]["cartesian_velocity"][:, 3:6]
+
+#     trajectory["action"] = tf.concat(
+#         (
+#             dt,
+#             dR,
+#             1 - trajectory["action_dict"]["gripper_position"],
+#         ),
+#         axis=-1,
+#     )
+#     trajectory["observation"]["exterior_image_1_left"], trajectory["observation"]["exterior_image_2_left"] = (
+#         rand_swap_exterior_images(
+#             trajectory["observation"]["exterior_image_1_left"],
+#             trajectory["observation"]["exterior_image_2_left"],
+#         )
+#     )
+#     trajectory["observation"]["proprio"] = tf.concat(
+#         (
+#             trajectory["observation"]["cartesian_position"],
+#             trajectory["observation"]["gripper_position"],
+#         ),
+#         axis=-1,
+#     )
+#     return trajectory
+
+
+def droid_jointposact_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     """
-    DROID dataset transformation for actions expressed in *base* frame of the robot.
+    DROID dataset transformation for joint position actions.
     """
-    dt = trajectory["action_dict"]["cartesian_velocity"][:, :3]
-    dR = trajectory["action_dict"]["cartesian_velocity"][:, 3:6]
 
     trajectory["action"] = tf.concat(
         (
-            dt,
-            dR,
-            1 - trajectory["action_dict"]["gripper_position"],
+            trajectory["action_dict"]["joint_position"],
+            trajectory["action_dict"]["gripper_position"],
         ),
         axis=-1,
     )
@@ -86,7 +114,7 @@ def droid_baseact_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     )
     trajectory["observation"]["proprio"] = tf.concat(
         (
-            trajectory["observation"]["cartesian_position"],
+            trajectory["observation"]["joint_position"],
             trajectory["observation"]["gripper_position"],
         ),
         axis=-1,
@@ -176,3 +204,11 @@ def zero_action_filter(traj: Dict) -> bool:
     DROID_NORM_0_ACT = 2 * (tf.zeros_like(traj["action"][:, :6]) - DROID_Q01) / (DROID_Q99 - DROID_Q01 + 1e-8) - 1
 
     return tf.reduce_any(tf.math.abs(traj["action"][:, :6] - DROID_NORM_0_ACT) > 1e-5)
+
+
+def idle_filter(traj: Dict) -> bool:
+    """
+    Filters chunks whose first N_MAX_STEPS actions are constant (assumes pos action space).
+    """
+    N_MAX_STEPS = 8
+    return tf.reduce_any(tf.math.abs(traj["action"][:N_MAX_STEPS] - traj["action"][:1]) > 1e-5)

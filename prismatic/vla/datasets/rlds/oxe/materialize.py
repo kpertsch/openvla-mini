@@ -29,7 +29,7 @@ def make_oxe_dataset_kwargs(
 ) -> Dict[str, Any]:
     """Generates config (kwargs) for given dataset from Open-X Embodiment."""
     dataset_kwargs = deepcopy(OXE_DATASET_CONFIGS[dataset_name])
-    if dataset_kwargs["action_encoding"] not in [ActionEncoding.EEF_POS, ActionEncoding.EEF_R6]:
+    if dataset_kwargs["action_encoding"] not in [ActionEncoding.EEF_POS, ActionEncoding.EEF_R6, ActionEncoding.JOINT_POS]:
         raise ValueError(f"Cannot load `{dataset_name}`; only EEF_POS & EEF_R6 actions supported!")
 
     # [Contract] For EEF_POS & EEF_R6 actions, only the last action dimension (gripper) is absolute!
@@ -37,6 +37,9 @@ def make_oxe_dataset_kwargs(
     if dataset_kwargs["action_encoding"] is ActionEncoding.EEF_POS:
         dataset_kwargs["absolute_action_mask"] = [False] * 6 + [True]
         dataset_kwargs["action_normalization_mask"] = [True] * 6 + [False]
+    elif dataset_kwargs["action_encoding"] is ActionEncoding.JOINT_POS:
+        dataset_kwargs["absolute_action_mask"] = [False] * 7 + [True]
+        dataset_kwargs["action_normalization_mask"] = [True] * 7 + [False]
     elif dataset_kwargs["action_encoding"] is ActionEncoding.EEF_R6:
         dataset_kwargs["absolute_action_mask"] = [False] * 9 + [True]
         dataset_kwargs["action_normalization_mask"] = [True] * 9 + [False]
