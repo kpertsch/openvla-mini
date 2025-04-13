@@ -5,13 +5,14 @@ Extension class; wraps base LLM/VLM tokenizer with logic to discretize and token
 """
 
 import json
+import os
 from functools import partial
 from pathlib import Path
 from typing import List, Union
 
 import numpy as np
 import torch
-from transformers import PreTrainedTokenizerBase
+from transformers import AutoProcessor, PreTrainedTokenizerBase
 from transformers.models.qwen2.tokenization_qwen2_fast import Qwen2TokenizerFast
 
 from prismatic.overwatch.overwatch import initialize_overwatch
@@ -97,6 +98,70 @@ class ActionTokenizer:
     def required_future_horizon(self) -> int:
         # the number of future action horizon elements
         return 0
+
+
+class FASTTokenizer:
+    def __init__(
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        tokenizer_path: str = "physical-intelligence/fast",
+        use_extra: bool = False,
+    ) -> None:
+        """
+        Uses DCT-based FAST tokenizer to tokenize actions.
+
+        :param tokenizer: Base LLM/VLM tokenizer to extend.
+        :param tokenizer_path: Path to the FAST tokenizer.
+        :param use_extra: Use the extra tokens (not just the last ones), only implemented for Qwen2
+        """
+        self.tokenizer = tokenizer
+        self.tokenizer_path = tokenizer_path
+        if os.path.exists(tokenizer_path):
+            self.fast_tokenizer = AutoProcessor.from_pretrained(tokenizer_path)
+        else:
+            # Load tokenizer from HuggingFace, set HF_TOKEN env variable if loading from private repo
+            self.fast_tokenizer = AutoProcessor.from_pretrained(
+                tokenizer_path, trust_remote_code=True
+            )
+
+        self.tokenizer_len = self.tokenizer.vocab_size
+        if isinstance(tokenizer, Qwen2TokenizerFast) and use_extra:
+            self.tokenizer_len = len(self.tokenizer)
+        elif use_extra:
+            raise NotImplementedError("Cannot use extra tokens for this tokenizer!")
+
+        # [Contract] Set "action_token_begin_idx" based on
+        # `self.tokenizer.vocab_size - (self.fast_tokenizer.vocab_size + 1)`
+        #   =>> Assumes we're always overwriting the final `fast_tokenizer.vocab_size` tokens of the vocabulary!
+        self.action_token_begin_idx: int = int(self.tokenizer_len - (self.fast_tokenizer.vocab_size + 1))
+        self.action_token_end_idx: int = int(self.tokenizer_len)
+
+    def __call__(self, action: np.ndarray) -> Union[str, List[str]]:
+        """Clip & bin actions to *the last `fast_tokenizer.vocab_size` tokens* of the vocabulary."""
+        action_tokens = self.fast_tokenizer(action)
+
+        # Handle single element vs. batch
+        if len(action.shape) == 2:
+            return self.tokenizer.decode([self.tokenizer_len - a for a in action_tokens[0]])
+        else:
+            return self.tokenizer.batch_decode([[self.tokenizer_len - a for a in aa] for aa in action_tokens])
+
+    def decode_token_ids_to_actions(self, action_token_ids: np.ndarray) -> np.ndarray:
+        """
+        Returns continuous actions for discrete action token IDs.
+        """
+        action_tokens = self.tokenizer_len - action_token_ids
+        return self.fast_tokenizer.decode([action_tokens])[0]
+
+    @property
+    def vocab_size(self) -> int:
+        return self.fast_tokenizer.vocab_size
+
+    @property
+    def required_future_horizon(self) -> int:
+        # the number of future action horizon elements
+        # HACK: this is hardcoded for DROID for now
+        return 15
 
 
 class VQActionTokenizer(ActionTokenizer):
@@ -203,6 +268,17 @@ ACTION_TOKENIZERS = {
     "bridge_vq_extra_action_tokenizer": partial(
         VQActionTokenizer,
         vq_vae_path="vq/pretrain_modvq+mx-bridge_dataset+fach-7+ng-7+nemb-256+nlatent-512",
+        use_extra=True,
+    ),
+    # droid
+    "droid_vq_extra_action_tokenizer": partial(
+        VQActionTokenizer,
+        vq_vae_path="vq/pretrain_vq+mx-droid+fach-15+ng-8+nemb-256+nlatent-512",
+        use_extra=True,
+    ),
+    "droid_fast_extra_action_tokenizer": partial(
+        FASTTokenizer,
+        tokenizer_path="physical-intelligence/fast",
         use_extra=True,
     ),
 }
