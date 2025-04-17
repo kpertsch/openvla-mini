@@ -35,7 +35,13 @@ class OpenVLA(PrismaticVLM):
 
     @torch.inference_mode()
     def predict_action(
-        self, image: Union[Img, List[Img]], instruction: str, unnorm_key: Optional[str] = None, **kwargs: str
+        self,
+        image: Union[Img, List[Img]],
+        instruction: str,
+        proprio: Optional[np.ndarray] = None,
+        unnorm_key: Optional[str] = None,
+        max_tokens: int = 128,
+        **kwargs: str
     ) -> np.ndarray:
         """
         Core function for VLA inference; maps input image and task instruction to continuous action (de-tokenizes).
@@ -49,9 +55,19 @@ class OpenVLA(PrismaticVLM):
         """
         image_transform, tokenizer = self.vision_backbone.get_image_transform(), self.llm_backbone.tokenizer
 
+        prompt = f"What action should the robot take to {instruction.lower()}?"
+
+        # Create normalized proprio
+        if proprio is not None:
+            proprio_norm_stats = self.get_proprio_stats(unnorm_key)
+            mask = proprio_norm_stats.get("mask", np.ones_like(proprio_norm_stats["q01"], dtype=bool))
+            proprio_high, proprio_low = np.array(proprio_norm_stats["q99"]), np.array(proprio_norm_stats["q01"])
+            proprio = np.clip(2 * (proprio - proprio_low) / (proprio_high - proprio_low + 1e-8) - 1, -1, 1)
+            prompt += f" State: {proprio}"
+
         # Build VLA Prompt
         prompt_builder = self.get_prompt_builder()
-        prompt_builder.add_turn(role="human", message=f"What action should the robot take to {instruction.lower()}?")
+        prompt_builder.add_turn(role="human", message=prompt)
         prompt_text = prompt_builder.get_prompt()
 
         # Prepare Inputs
@@ -85,14 +101,29 @@ class OpenVLA(PrismaticVLM):
             generated_ids = super(PrismaticVLM, self).generate(
                 input_ids=input_ids,                            # Shape: [1, seq]
                 pixel_values=pixel_values,                      # Shape: [1, (opt T,) 3, res, res] or Dict[str, ...]
-                max_new_tokens=self.get_action_dim(unnorm_key),
+                max_new_tokens=max_tokens,
                 **kwargs
             )
             # fmt: on
 
         # Extract predicted action tokens and translate into (normalized) continuous actions
-        predicted_action_token_ids = generated_ids[0, -self.get_action_dim(unnorm_key) :]
+        # Step 1: Find beginning: token = 77091 ("assistant")
+        start_idx = list(generated_ids[0]).index(77091) + 1  # +1 to get the index after the "assistant" token, a newline
+        predicted_action_token_ids = generated_ids[0, start_idx + 1:]
+        if predicted_action_token_ids[-1] == 151643:    # prune "|endoftext|" token
+            predicted_action_token_ids = predicted_action_token_ids[:-1]
+        if predicted_action_token_ids[-1] == 151645:    # prune "|im_end|" token
+            predicted_action_token_ids = predicted_action_token_ids[:-1]
+        # print(len(input_ids[0]))
+        # print(len(generated_ids[0]))
+        # print(len(predicted_action_token_ids))
+        # print(generated_ids[0])
+        # print(predicted_action_token_ids)
+        # print(self.action_tokenizer.tokenizer_len - generated_ids[0])
+        # print(self.action_tokenizer.tokenizer.decode(generated_ids[0]))
+        # print(self.action_tokenizer.tokenizer.decode(predicted_action_token_ids))
         normalized_actions = self.action_tokenizer.decode_token_ids_to_actions(predicted_action_token_ids.cpu().numpy())
+        print(normalized_actions.shape)
 
         # Un-normalize Actions
         action_norm_stats = self.get_action_stats(unnorm_key)
@@ -133,3 +164,9 @@ class OpenVLA(PrismaticVLM):
         unnorm_key = self._check_unnorm_key(self.norm_stats, unnorm_key)
 
         return self.norm_stats[unnorm_key]["action"]
+
+    def get_proprio_stats(self, unnorm_key: Optional[str] = None) -> Dict:
+        """Dimensionality of the policy's action space."""
+        unnorm_key = self._check_unnorm_key(self.norm_stats, unnorm_key)
+
+        return self.norm_stats[unnorm_key]["proprio"]

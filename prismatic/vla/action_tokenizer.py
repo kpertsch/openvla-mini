@@ -238,8 +238,8 @@ class VQActionTokenizer(ActionTokenizer):
         ret_action = self.vq_vae.get_action_from_latent(latent)
 
         # reshape to be a flat array if the input was a single action
-        if action_token_ids.shape[0] == 1 and len(initial_shape) == 1:
-            return ret_action[0, 0]
+        if len(initial_shape) == 1:
+            return ret_action[0].cpu().numpy()
 
         # get the first horizon element of the returned actions (VQ might return an action horizon)
         # TODO parameterize this

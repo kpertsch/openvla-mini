@@ -201,6 +201,7 @@ class Exp_Qwen25_DinoSigLIP_224px_0_5B_DROID(Exp_SigLIP_224px_Bridge):
     per_device_batch_size: int = 32
 
     use_proprio: bool = True
+    # use_wrist_image: bool = True
 
 
 @dataclass
@@ -216,6 +217,7 @@ class Exp_Qwen25_DinoSigLIP_224px_0_5B_DROID_FAST(Exp_SigLIP_224px_Bridge):
     per_device_batch_size: int = 32
 
     use_proprio: bool = True
+    # use_wrist_image: bool = True
 
 
 @dataclass
