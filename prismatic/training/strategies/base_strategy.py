@@ -333,13 +333,14 @@ class TrainingStrategy(ABC):
                 action_accuracy = correct_preds.sum().float() / mask.sum().float()
 
                 # Compute L1 Loss on Predicted (Continuous) Actions
-                continuous_actions_pred = torch.tensor(
-                    action_tokenizer.decode_token_ids_to_actions(action_preds[mask].cpu().numpy())
-                )
-                continuous_actions_gt = torch.tensor(
-                    action_tokenizer.decode_token_ids_to_actions(action_gt[mask].cpu().numpy())
-                )
-                action_l1_loss = torch.nn.functional.l1_loss(continuous_actions_pred, continuous_actions_gt)
+                # continuous_actions_pred = torch.tensor(
+                #     action_tokenizer.decode_token_ids_to_actions(action_preds[mask].cpu().numpy())
+                # )
+                # continuous_actions_gt = torch.tensor(
+                #     action_tokenizer.decode_token_ids_to_actions(action_gt[mask].cpu().numpy())
+                # )
+                # action_l1_loss = torch.nn.functional.l1_loss(continuous_actions_pred, continuous_actions_gt)
+                action_l1_loss = torch.tensor(0., dtype=torch.float32)
 
                 # Commit Metrics
                 metrics.commit(action_accuracy=action_accuracy, l1_loss=action_l1_loss, update_step_time=True)

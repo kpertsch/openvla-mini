@@ -17,6 +17,7 @@ Run with:
 
 import json
 import os
+os.environ["PRISMATIC_DATA_ROOT"] = ""
 import re
 from dataclasses import dataclass, field
 from pathlib import Path

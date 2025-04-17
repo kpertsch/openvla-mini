@@ -63,7 +63,7 @@ class OpenVLA(PrismaticVLM):
             mask = proprio_norm_stats.get("mask", np.ones_like(proprio_norm_stats["q01"], dtype=bool))
             proprio_high, proprio_low = np.array(proprio_norm_stats["q99"]), np.array(proprio_norm_stats["q01"])
             proprio = np.clip(2 * (proprio - proprio_low) / (proprio_high - proprio_low + 1e-8) - 1, -1, 1)
-            prompt += f" State: {proprio}"
+            prompt += f" State: {proprio.round(2)}"
 
         # Build VLA Prompt
         prompt_builder = self.get_prompt_builder()

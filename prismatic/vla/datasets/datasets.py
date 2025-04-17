@@ -43,7 +43,7 @@ class RLDSBatchTransform:
         """Converts a RLDS batch to the format expected by the OpenVLA collator/models."""
         dataset_name, action = rlds_batch["dataset_name"], rlds_batch["action"]
         lang = rlds_batch["task"]["language_instruction"].decode().lower()
-        state = rlds_batch["observation"]["proprio"][0]
+        state = rlds_batch["observation"]["proprio"][0].round(2)
 
         # either a single or multi image, depending on image_window_size
         if self.image_window_size == 1:

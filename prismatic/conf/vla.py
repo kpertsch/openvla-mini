@@ -190,34 +190,35 @@ class Exp_Qwen25_DinoSigLIP_224px_0_5B_Bridge(Exp_SigLIP_224px_Bridge):
 #### DROID Qwen ####
 @dataclass
 class Exp_Qwen25_DinoSigLIP_224px_0_5B_DROID(Exp_SigLIP_224px_Bridge):
-    vla_id: str = "prism-qwen25-dinosiglip-224px+0_5b+mx-droid"
+    vla_id: str = "prism-qwen25-dinosiglip-224px+0_5b+mx-droid-withwrist"
     base_vlm: Union[str, Path] = "prism-qwen25-extra-dinosiglip-224px+0_5b"
 
     data_mix: str = "droid"
     action_tokenizer: str = "droid_vq_extra_action_tokenizer"
 
     expected_world_size: int = 8
-    global_batch_size: int = 256
-    per_device_batch_size: int = 32
+    global_batch_size: int = 192
+    per_device_batch_size: int = 24
 
     use_proprio: bool = True
-    # use_wrist_image: bool = True
-
+    use_wrist_image: bool = True
+    image_sequence_len: int = 2
 
 @dataclass
 class Exp_Qwen25_DinoSigLIP_224px_0_5B_DROID_FAST(Exp_SigLIP_224px_Bridge):
-    vla_id: str = "prism-qwen25-dinosiglip-224px+0_5b+mx-droid-fast"
+    vla_id: str = "prism-qwen25-dinosiglip-224px+0_5b+mx-droid-fast-withwrist"
     base_vlm: Union[str, Path] = "prism-qwen25-extra-dinosiglip-224px+0_5b"
 
     data_mix: str = "droid"
-    action_tokenizer: str = "droid_fast_extra_action_tokenizer"
+    action_tokenizer: str = "droid_fast_action_tokenizer"
 
     expected_world_size: int = 8
-    global_batch_size: int = 256
-    per_device_batch_size: int = 32
+    global_batch_size: int = 160
+    per_device_batch_size: int = 20
 
     use_proprio: bool = True
-    # use_wrist_image: bool = True
+    use_wrist_image: bool = True
+    image_sequence_len: int = 2
 
 
 @dataclass

@@ -43,14 +43,14 @@ def run_policy(vla, obs):
         return image.resize((224, 224), Image.Resampling.LANCZOS)
 
     action = vla.predict_action(
-        # [
-        #     resize_image(Image.fromarray(image).convert("RGB"))
-        #     for image in [
-        #         obs["observation/exterior_image_1_left"],
-        #         obs["observation/wrist_image_left"]
-        #     ]
-        # ],
-        resize_image(Image.fromarray(obs["observation/exterior_image_1_left"]).convert("RGB")),
+        [
+            resize_image(Image.fromarray(image).convert("RGB"))
+            for image in [
+                obs["observation/exterior_image_1_left"],
+                obs["observation/wrist_image_left"]
+            ]
+        ],
+        # resize_image(Image.fromarray(obs["observation/exterior_image_1_left"]).convert("RGB")),
         obs["prompt"].lower(),
         proprio=np.concatenate(
             [

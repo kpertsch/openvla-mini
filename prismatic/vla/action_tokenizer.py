@@ -124,11 +124,13 @@ class FASTTokenizer:
                 tokenizer_path, trust_remote_code=True
             )
 
-        self.tokenizer_len = self.tokenizer.vocab_size
-        if isinstance(tokenizer, Qwen2TokenizerFast) and use_extra:
-            self.tokenizer_len = len(self.tokenizer)
-        elif use_extra:
-            raise NotImplementedError("Cannot use extra tokens for this tokenizer!")
+        self.token_offset = 128  # Avoid some special tokens
+        self.tokenizer_len = self.tokenizer.vocab_size - self.token_offset
+        assert not use_extra, "Cannot use extra tokens for this tokenizer!"
+        # if isinstance(tokenizer, Qwen2TokenizerFast) and use_extra:
+        #     self.tokenizer_len = len(self.tokenizer)
+        # elif use_extra:
+        #     raise NotImplementedError("Cannot use extra tokens for this tokenizer!")
 
         # [Contract] Set "action_token_begin_idx" based on
         # `self.tokenizer.vocab_size - (self.fast_tokenizer.vocab_size + 1)`
@@ -276,9 +278,9 @@ ACTION_TOKENIZERS = {
         vq_vae_path="vq/pretrain_vq+mx-droid+fach-15+ng-8+nemb-256+nlatent-512",
         use_extra=True,
     ),
-    "droid_fast_extra_action_tokenizer": partial(
+    "droid_fast_action_tokenizer": partial(
         FASTTokenizer,
         tokenizer_path="physical-intelligence/fast",
-        use_extra=True,
+        use_extra=False,
     ),
 }
