@@ -60,6 +60,8 @@ def run_policy(vla, obs):
         ),
         max_tokens=128,
     )
+    action = {"actions" : action}
+
     return action
 
 
