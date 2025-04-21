@@ -197,8 +197,8 @@ class Exp_Qwen25_DinoSigLIP_224px_0_5B_DROID(Exp_SigLIP_224px_Bridge):
     action_tokenizer: str = "droid_vq_extra_action_tokenizer"
 
     expected_world_size: int = 8
-    global_batch_size: int = 192
-    per_device_batch_size: int = 24
+    global_batch_size: int = 160
+    per_device_batch_size: int = 20
 
     use_proprio: bool = True
     use_wrist_image: bool = True

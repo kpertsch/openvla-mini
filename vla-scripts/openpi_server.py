@@ -44,11 +44,8 @@ def run_policy(vla, obs):
 
     action = vla.predict_action(
         [
-            resize_image(Image.fromarray(image).convert("RGB"))
-            for image in [
-                obs["observation/exterior_image_1_left"],
-                obs["observation/wrist_image_left"]
-            ]
+            resize_image(Image.fromarray(obs["observation/exterior_image_1_left"]).convert("RGB")),
+            resize_image(Image.fromarray(obs["observation/wrist_image_left"]).convert("RGB"))
         ],
         # resize_image(Image.fromarray(obs["observation/exterior_image_1_left"]).convert("RGB")),
         obs["prompt"].lower(),
@@ -77,7 +74,7 @@ class WebsocketPolicyServer:
         metadata: dict | None = None,
     ) -> None:
         # Load the VLA model
-        vla = load_vla(policy_path)
+        vla = load_vla(policy_path, image_sequence_len=2)
 
         # Cast to half precision, move to GPU.
         device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
